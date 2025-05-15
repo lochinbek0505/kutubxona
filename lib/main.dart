@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'BooksPage.dart';
 import 'LoginScreen.dart';
 import 'MembersManagementPage.dart';
 import 'UploadBookPage.dart';
@@ -39,7 +40,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Kutubxona',
       debugShowCheckedModeBanner: false,
-      home: check ? EditMyBooksPage() : LoginScreen(),
+      home: check ? BooksPage() : LoginScreen(),
     );
   }
 }
