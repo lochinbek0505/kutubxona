@@ -33,6 +33,9 @@ class _EditMyBooksPageState extends State<EditMyBooksPage> {
   }
 
   Future<void> fetchMyBooks() async {
+    setState(() {
+      isLoading = false;
+    });
     final snapshot = await FirebaseDatabase.instance.ref().child('books').get();
     final List<Map<String, dynamic>> tempBooks = [];
 
@@ -40,8 +43,7 @@ class _EditMyBooksPageState extends State<EditMyBooksPage> {
       final Map data = snapshot.value as Map;
       data.forEach((key, value) {
         final book = Map<String, dynamic>.from(value);
-        if (
-            book['authorId'] == userId) {
+        if (book['authorId'] == userId) {
           tempBooks.add(book);
         }
       });
@@ -54,48 +56,24 @@ class _EditMyBooksPageState extends State<EditMyBooksPage> {
     });
   }
 
-  void showEditDialog(Map<String, dynamic> book) {
-    final titleController = TextEditingController(text: book['title']);
-    final authorController = TextEditingController(text: book['author']);
-    final descController = TextEditingController(text: book['description']);
+  Future<void> deleteBook(String bookId) async {
+    await FirebaseDatabase.instance.ref().child('books').child(bookId).remove();
+    fetchMyBooks();
+  }
 
+  void showDeleteDialog(String bookId) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             backgroundColor: const Color(0xFF1E293B),
             title: const Text(
-              "Kitobni tahrirlash",
+              "Kitobni o'chirish",
               style: TextStyle(color: Colors.white),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: "Sarlavha",
-                    labelStyle: TextStyle(color: Colors.white54),
-                  ),
-                ),
-                TextField(
-                  controller: authorController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: "Muallif",
-                    labelStyle: TextStyle(color: Colors.white54),
-                  ),
-                ),
-                TextField(
-                  controller: descController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: "Tavsif",
-                    labelStyle: TextStyle(color: Colors.white54),
-                  ),
-                ),
-              ],
+            content: const Text(
+              "Haqiqatan ham ushbu kitobni o'chirmoqchimisiz?",
+              style: TextStyle(color: Colors.white70),
             ),
             actions: [
               TextButton(
@@ -107,22 +85,13 @@ class _EditMyBooksPageState extends State<EditMyBooksPage> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  final updatedBook = {
-                    'title': titleController.text.trim(),
-                    'author': authorController.text.trim(),
-                    'description': descController.text.trim(),
-                  };
-
-                  await FirebaseDatabase.instance
-                      .ref()
-                      .child('books')
-                      .child(book['bookId'])
-                      .update(updatedBook);
-
+                  await deleteBook(bookId);
                   Navigator.pop(context);
-                  fetchMyBooks(); // yangilash
                 },
-                child: const Text("Saqlash"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                ),
+                child: const Text("O'chirish"),
               ),
             ],
           ),
@@ -187,24 +156,59 @@ class _EditMyBooksPageState extends State<EditMyBooksPage> {
                           "📄 Tavsif: ${book['description']}",
                           style: const TextStyle(color: Colors.white60),
                         ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (b)=> EditBookPage(data: book)));
-
-                            },
-                            icon: const Icon(Icons.edit, size: 18),
-                            label: const Text("Tahrirlash"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueGrey,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (b) => EditBookPage(data: book),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.edit,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                              label: const Text(
+                                "Tahrirlash",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueGrey,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                showDeleteDialog(book['bookId']);
+                              },
+                              icon: const Icon(
+                                Icons.delete,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                              label: const Text(
+                                "O'chirish",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
