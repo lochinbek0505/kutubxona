@@ -119,7 +119,7 @@ class _UploadBookPageState extends State<UploadBookPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _language = prefs.getString('language') ?? 'uz';
-      _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+      _isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
     });
   }
 

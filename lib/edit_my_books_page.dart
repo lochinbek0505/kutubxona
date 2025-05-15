@@ -26,7 +26,7 @@ class _EditMyBooksPageState extends State<EditMyBooksPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       language = prefs.getString('language') ?? 'uz';
-      isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+      isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
     });
   }
 

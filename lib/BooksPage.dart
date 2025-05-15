@@ -37,7 +37,7 @@ class _BooksPageState extends State<BooksPage> with TickerProviderStateMixin {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       language = prefs.getString('language') ?? 'uz';
-      isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+      isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
     });
   }
 

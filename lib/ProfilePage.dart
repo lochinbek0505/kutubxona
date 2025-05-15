@@ -30,7 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _language = prefs.getString('language') ?? 'uz';
-      _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+      _isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
     });
 
     // Load current user email

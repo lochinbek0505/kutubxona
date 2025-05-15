@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _language = prefs.getString('language') ?? 'uz';
-      _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+      _isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
     });
   }
 
