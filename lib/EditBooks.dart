@@ -60,7 +60,6 @@ class _UploadBookPageState extends State<EditBookPage> {
     try {
       setState(() => isLoading = true);
 
-
       final bookData = {
         'title': titleController.text.trim(),
         'author': authorController.text.trim(),
@@ -80,7 +79,8 @@ class _UploadBookPageState extends State<EditBookPage> {
 
       // Agar private bo‘lsa allowedUsers ga yozamiz
       if (status == 'private') {
-        await dbRef.child('allowedUsers').update({
+        await dbRef.child('allowedUsers').remove();
+        await dbRef.child('allowedUsers').set({
           for (var id in selectedUserIds) id: true,
         });
       }
