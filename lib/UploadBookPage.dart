@@ -112,41 +112,49 @@ class _UploadBookPageState extends State<UploadBookPage> {
 
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Foydalanuvchilarni tanlang'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            children: usersData.entries.map((entry) {
-              final userId = entry.key;
-              final name = entry.value['name'] ?? 'Noma’lum';
-              final isSelected = tempSelected.contains(userId);
-              return CheckboxListTile(
-                value: isSelected,
-                title: Text(name),
-                onChanged: (val) {
-                  setState(() {
-                    if (val == true) {
-                      tempSelected.add(userId);
-                    } else {
-                      tempSelected.remove(userId);
-                    }
-                  });
-                },
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Foydalanuvchilarni tanlang'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setStateDialog) {
+              return SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: ListView(
+                  children: usersData.entries.map((entry) {
+                    final userId = entry.key;
+                    final name = entry.value['name'] ?? 'Noma’lum';
+                    final isSelected = tempSelected.contains(userId);
+
+                    return CheckboxListTile(
+                      value: isSelected,
+                      title: Text(name),
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          if (val == true) {
+                            tempSelected.add(userId);
+                          } else {
+                            tempSelected.remove(userId);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
               );
-            }).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() => selectedUserIds = tempSelected);
-              Navigator.of(context).pop();
             },
-            child: const Text('Tanlash'),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() => selectedUserIds = tempSelected);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Tanlash'),
+            ),
+          ],
+        );
+      },
     );
   }
 

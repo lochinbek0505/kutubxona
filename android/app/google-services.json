@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "389216536196",
+    "firebase_url": "https://mymessanger-6a85f-default-rtdb.firebaseio.com",
+    "project_id": "mymessanger-6a85f",
+    "storage_bucket": "mymessanger-6a85f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:389216536196:android:c77663ef7d44cdab6324d1",
+        "android_client_info": {
+          "package_name": "com.example.kutubxona"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCh-hMKyDgvG9I5juRWiNixcrzK6F7Zk9s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

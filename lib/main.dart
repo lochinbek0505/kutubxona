@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:kutubxona/register_screen.dart';
 import 'LoginScreen.dart';
 import 'MembersManagementPage.dart';
 import 'UploadBookPage.dart';
@@ -17,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kutubxona',
       debugShowCheckedModeBanner: false,
-      home: RegisterScreen(),
+      home: UploadBookPage(),
     );
   }
 }
