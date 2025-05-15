@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "595547990710",
+    "project_id": "kutubxona-18a2e",
+    "storage_bucket": "kutubxona-18a2e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:595547990710:android:d35cb808494654d76b9417",
+        "android_client_info": {
+          "package_name": "com.example.kutubxona"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYC8k-ZTPLpXrLLJW3OxTiSexdqeulzhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
