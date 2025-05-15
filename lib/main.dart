@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:kutubxona/register_screen.dart';
 import 'LoginScreen.dart';
 import 'MembersManagementPage.dart';
+import 'UploadBookPage.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +17,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Kutubxona',
       debugShowCheckedModeBanner: false,
-      home: MembersManagementPage(),
+      home: RegisterScreen(),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -18,7 +19,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final passwordController = TextEditingController();
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool isLoading = false;
 
@@ -42,12 +42,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final uid = userCredential.user!.uid;
 
       // Firestore-ga yozish
-      await _firestore.collection('users').doc(uid).set({
+      await FirebaseDatabase.instance.ref().child('users').child(generateUserId(uid)).set({
         'name': name,
         'email': email,
-        'userId': generateUserId(uid), // USER_001 ko'rinishida ID
+        'userId': generateUserId(uid),
         'downloadedBooks': 0,
-        'borrowedBooks': {},
+        'borrowedBooks': 0,
         'createdAt': DateTime.now().toIso8601String(),
       });
 
