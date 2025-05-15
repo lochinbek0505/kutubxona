@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'LoginScreen.dart';
 import 'local_user_service.dart';
@@ -20,6 +21,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool isLoading = false;
+  String _language = 'uz';
+  bool _isDarkTheme = false;
+
+  // Localization texts
+  final Map<String, Map<String, String>> translations = {
+    'register_title': {
+      'uz': "Ro'yxatdan o'tish",
+      'ru': "Регистрация",
+    },
+    'name_hint': {
+      'uz': "Ismingiz",
+      'ru': "Ваше имя",
+    },
+    'email_hint': {
+      'uz': "Email",
+      'ru': "Электронная почта",
+    },
+    'password_hint': {
+      'uz': "Parol",
+      'ru': "Пароль",
+    },
+    'register_button': {
+      'uz': "Ro'yxatdan o'tish",
+      'ru': "Зарегистрироваться",
+    },
+    'login_prompt': {
+      'uz': "Hisobga kirish",
+      'ru': "Войти в аккаунт",
+    },
+    'validation_error': {
+      'uz': "Iltimos, barcha maydonlarni to'g'ri to'ldiring.",
+      'ru': "Пожалуйста, правильно заполните все поля.",
+    },
+    'register_success': {
+      'uz': "Ro'yxatdan o'tildi!",
+      'ru': "Регистрация успешна!",
+    },
+    'register_error': {
+      'uz': "Ro'yxatdan o'tishda xatolik yuz berdi.",
+      'ru': "Ошибка при регистрации.",
+    },
+  };
+
+  String t(String key) => translations[key]?[_language] ?? key;
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _language = prefs.getString('language') ?? 'uz';
+      _isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', _language);
+    await prefs.setBool('isDarkTheme', _isDarkTheme);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
 
   Future<void> registerUser() async {
     final name = nameController.text.trim();
@@ -27,21 +92,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = passwordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.length < 6) {
-      _showMessage("Iltimos, barcha maydonlarni to'g'ri to'ldiring.");
+      _showMessage(t('validation_error'));
       return;
     }
 
     setState(() => isLoading = true);
 
     try {
-      // Auth orqali foydalanuvchini ro’yxatdan o’tkazish
       UserCredential userCredential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
 
       final uid = userCredential.user!.uid;
       final userId = generateUserId(uid);
 
-      // Realtime Database-ga yozish
       await FirebaseDatabase.instance.ref().child('users').child(uid).set({
         'name': name,
         'email': email,
@@ -51,18 +114,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': DateTime.now().toIso8601String(),
       });
 
-      // Localga saqlash
       await LocalUserService.saveUser(userId: userId, name: name, email: email);
 
-      _showMessage('Ro‘yxatdan o‘tildi!');
+      _showMessage(t('register_success'));
 
-      // HomeScreen-ga o‘tish
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      _showMessage(e.message ?? "Ro’yxatdan o’tishda xatolik yuz berdi.");
+      _showMessage(e.message ?? t('register_error'));
     } catch (e) {
       _showMessage("Xatolik: ${e.toString()}");
     } finally {
@@ -81,8 +142,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = _isDarkTheme ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = _isDarkTheme ? Colors.white : Colors.black87;
+    final cardColor = _isDarkTheme ? Colors.white.withOpacity(0.07) : Colors.grey[200];
+    final accentColor = const Color(0xFF22C55E);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: bgColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -90,48 +156,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               children: [
                 Text(
-                  'Ro’yxatdan o’tish',
+                  t('register_title'),
                   style: GoogleFonts.poppins(
                     fontSize: 28,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 30),
-                _glassTextField(nameController, 'Ismingiz', Icons.person),
+                _buildInputField(
+                  controller: nameController,
+                  hint: t('name_hint'),
+                  icon: Icons.person,
+                  textColor: textColor,
+                  cardColor: cardColor,
+                ),
                 const SizedBox(height: 20),
-                _glassTextField(emailController, 'Email', Icons.email),
+                _buildInputField(
+                  controller: emailController,
+                  hint: t('email_hint'),
+                  icon: Icons.email,
+                  textColor: textColor,
+                  cardColor: cardColor,
+                ),
                 const SizedBox(height: 20),
-                _glassTextField(
-                  passwordController,
-                  'Parol',
-                  Icons.lock,
+                _buildInputField(
+                  controller: passwordController,
+                  hint: t('password_hint'),
+                  icon: Icons.lock,
                   obscure: true,
+                  textColor: textColor,
+                  cardColor: cardColor,
                 ),
                 const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: isLoading ? null : registerUser,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 70,
-                      vertical: 16,
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : registerUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                      t('register_button'),
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  child:
-                      isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(
-                            "Ro’yxatdan o’tish",
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              color: Colors.white,
-                            ),
-                          ),
                 ),
+                const SizedBox(height: 15),
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
@@ -139,9 +220,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       MaterialPageRoute(builder: (_) => const LoginScreen()),
                     );
                   },
-                  child: const Text("Hisobga kirish"),
+                  child: Text(
+                    t('login_prompt'),
+                    style: GoogleFonts.poppins(
+                      color: accentColor,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                // TextButton
               ],
             ),
           ),
@@ -150,30 +236,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _glassTextField(
-    TextEditingController controller,
-    String hint,
-    IconData icon, {
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required Color textColor,
+    required Color? cardColor,
     bool obscure = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: const TextStyle(color: Colors.white),
+        style: GoogleFonts.poppins(color: textColor),
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
-            vertical: 18,
+            vertical: 16,
           ),
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.white54),
+          hintStyle: GoogleFonts.poppins(color: textColor.withOpacity(0.6)),
+          prefixIcon: Icon(icon, color: textColor.withOpacity(0.6)),
           border: InputBorder.none,
         ),
       ),

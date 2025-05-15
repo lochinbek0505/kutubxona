@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import 'local_user_service.dart';
@@ -27,6 +28,18 @@ class _UploadBookPageState extends State<EditBookPage> {
   File? selectedFile;
   bool isLoading = false;
   var userId = '';
+  String language = 'uz';
+  bool isDarkTheme = false;
+
+  Future<void> loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      language = prefs.getString('language') ?? 'uz';
+      isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+    });
+  }
+
+  String t(String uz, String ru) => language == 'ru' ? ru : uz;
 
   getId() async {
     var data = await LocalUserService.getUser();
@@ -34,22 +47,17 @@ class _UploadBookPageState extends State<EditBookPage> {
     setState(() {});
   }
 
-  // private uchun tanlangan user IDlari
   List<String> selectedUserIds = [];
-
-  Future<void> requestStoragePermission() async {
-    await Permission.storage.request();
-  }
 
   InputDecoration _glassInputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white70),
+      hintStyle: TextStyle(color: isDarkTheme ? Colors.white70 : Colors.black54),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.06),
+      fillColor: isDarkTheme ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.grey.shade300),
       ),
     );
   }
@@ -66,18 +74,15 @@ class _UploadBookPageState extends State<EditBookPage> {
         'description': descriptionController.text.trim(),
         'category': category,
         'status': status,
-
         'createdAt': DateTime.now().toIso8601String(),
       };
 
-      // Realtime DB saqlash
       final dbRef = FirebaseDatabase.instance
           .ref()
           .child('books')
           .child(widget.data['bookId']);
       await dbRef.update(bookData);
 
-      // Agar private bo‘lsa allowedUsers ga yozamiz
       if (status == 'private') {
         await dbRef.child('allowedUsers').remove();
         await dbRef.child('allowedUsers').set({
@@ -91,29 +96,19 @@ class _UploadBookPageState extends State<EditBookPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kitob muvaffaqiyatli tahrirlandi')),
+        SnackBar(content: Text(t('Kitob muvaffaqiyatli tahrirlandi', 'Книга успешно отредактирована'))),
       );
     } catch (e) {
       setState(() => isLoading = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Xatolik: $e')));
-    }
-  }
-
-  Future<void> _pickPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-    if (result != null && result.files.single.path != null) {
-      setState(() => selectedFile = File(result.files.single.path!));
+      ).showSnackBar(SnackBar(content: Text('${t('Xatolik', 'Ошибка')}: $e')));
     }
   }
 
   Future<void> _showUserSelectionDialog() async {
     final usersSnapshot =
-        await FirebaseDatabase.instance.ref().child('users').get();
+    await FirebaseDatabase.instance.ref().child('users').get();
     final Map<dynamic, dynamic>? usersData = usersSnapshot.value as Map?;
 
     if (usersData == null) return;
@@ -124,33 +119,32 @@ class _UploadBookPageState extends State<EditBookPage> {
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: const Text('Foydalanuvchilarni tanlang'),
+          title: Text(t('Foydalanuvchilarni tanlang', 'Выберите пользователей')),
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setStateDialog) {
               return SizedBox(
                 width: double.maxFinite,
                 height: 400,
                 child: ListView(
-                  children:
-                      usersData.entries.map((entry) {
-                        final userId = entry.key;
-                        final name = entry.value['name'] ?? 'Noma’lum';
-                        final isSelected = tempSelected.contains(userId);
+                  children: usersData.entries.map((entry) {
+                    final userId = entry.key;
+                    final name = entry.value['name'] ?? 'Noma’lum';
+                    final isSelected = tempSelected.contains(userId);
 
-                        return CheckboxListTile(
-                          value: isSelected,
-                          title: Text(name),
-                          onChanged: (val) {
-                            setStateDialog(() {
-                              if (val == true) {
-                                tempSelected.add(userId);
-                              } else {
-                                tempSelected.remove(userId);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                    return CheckboxListTile(
+                      value: isSelected,
+                      title: Text(name),
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          if (val == true) {
+                            tempSelected.add(userId);
+                          } else {
+                            tempSelected.remove(userId);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
                 ),
               );
             },
@@ -161,7 +155,7 @@ class _UploadBookPageState extends State<EditBookPage> {
                 setState(() => selectedUserIds = tempSelected);
                 Navigator.of(context).pop();
               },
-              child: const Text('Tanlash'),
+              child: Text(t('Tanlash', 'Выбрать')),
             ),
           ],
         );
@@ -173,6 +167,7 @@ class _UploadBookPageState extends State<EditBookPage> {
   void initState() {
     super.initState();
     getId();
+    loadPreferences();
 
     titleController.text = widget.data['title'];
     authorController.text = widget.data['author'];
@@ -180,124 +175,106 @@ class _UploadBookPageState extends State<EditBookPage> {
     category = widget.data['category'];
     status = widget.data['status'];
 
-    // Convert allowedUsers Map keys to List<String>
     if (widget.data['allowedUsers'] != null) {
-      final allowedUsersMap =
-          widget.data['allowedUsers'] as Map<dynamic, dynamic>;
+      final allowedUsersMap = widget.data['allowedUsers'] as Map<dynamic, dynamic>;
       selectedUserIds = allowedUsersMap.keys.map((e) => e.toString()).toList();
-    } else {
-      selectedUserIds = [];
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: isDarkTheme ? const Color(0xFF0F172A) : Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text(
-          'Kitob Yuklash',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          t('Kitob Tahrirlash', 'Редактирование книги'),
+          style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
         ),
         centerTitle: true,
         elevation: 0,
+        iconTheme: IconThemeData(
+          color: isDarkTheme ? Colors.white : Colors.black,
+        ),
       ),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _glassInputDecoration("Kitob nomi"),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: authorController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _glassInputDecoration("Muallif"),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: descriptionController,
-                      style: const TextStyle(color: Colors.white),
-                      maxLines: 4,
-                      decoration: _glassInputDecoration("Tavsif"),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      value: category,
-                      dropdownColor: Colors.blueGrey.shade900,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _glassInputDecoration("Kategoriya"),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Badiiy',
-                          child: Text("Badiiy"),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Darslik',
-                          child: Text("Darslik"),
-                        ),
-                      ],
-                      onChanged: (val) => setState(() => category = val!),
-                    ),
-                    const SizedBox(height: 14),
-                    DropdownButtonFormField<String>(
-                      value: status,
-                      dropdownColor: Colors.blueGrey.shade900,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _glassInputDecoration("Holat (status)"),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'public',
-                          child: Text("🔓 Ochiq"),
-                        ),
-                        DropdownMenuItem(
-                          value: 'private',
-                          child: Text("🔒 Maxfiy"),
-                        ),
-                      ],
-                      onChanged: (val) => setState(() => status = val!),
-                    ),
-                    if (status == 'private') ...[
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _showUserSelectionDialog,
-                        child: const Text("Foydalanuvchilarni tanlash"),
-                      ),
-                      if (selectedUserIds.isNotEmpty)
-                        Text(
-                          "${selectedUserIds.length} foydalanuvchi tanlangan",
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                    ],
-
-                    const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: _uploadBook,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.tealAccent[700],
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 80,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        "Kitobni tahrirlash",
-                        style: GoogleFonts.poppins(fontSize: 18),
-                      ),
-                    ),
-                  ],
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: titleController,
+              style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
+              decoration: _glassInputDecoration(t("Kitob nomi", "Название книги")),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: authorController,
+              style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
+              decoration: _glassInputDecoration(t("Muallif", "Автор")),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: descriptionController,
+              style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
+              maxLines: 4,
+              decoration: _glassInputDecoration(t("Tavsif", "Описание")),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              value: category,
+              dropdownColor: isDarkTheme ? Colors.blueGrey.shade900 : Colors.white,
+              style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
+              decoration: _glassInputDecoration(t("Kategoriya", "Категория")),
+              items: [
+                DropdownMenuItem(value: 'Badiiy', child: Text(t("Badiiy", "Художественная"))),
+                DropdownMenuItem(value: 'Darslik', child: Text(t("Darslik", "Учебник"))),
+              ],
+              onChanged: (val) => setState(() => category = val!),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              value: status,
+              dropdownColor: isDarkTheme ? Colors.blueGrey.shade900 : Colors.white,
+              style: TextStyle(color: isDarkTheme ? Colors.white : Colors.black),
+              decoration: _glassInputDecoration(t("Holat", "Статус")),
+              items: [
+                DropdownMenuItem(value: 'public', child: Text("🔓 ${t('Ochiq', 'Открытый')}")),
+                DropdownMenuItem(value: 'private', child: Text("🔒 ${t('Maxfiy', 'Приватный')}")),
+              ],
+              onChanged: (val) => setState(() => status = val!),
+            ),
+            if (status == 'private') ...[
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _showUserSelectionDialog,
+                child: Text(t("Foydalanuvchilarni tanlash", "Выбрать пользователей")),
+              ),
+              if (selectedUserIds.isNotEmpty)
+                Text(
+                  "${selectedUserIds.length} ${t("foydalanuvchi tanlangan", "пользователей выбрано")}",
+                  style: TextStyle(color: isDarkTheme ? Colors.white70 : Colors.black54),
+                ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _uploadBook,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.tealAccent[700],
+                padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              child: Text(
+                t("Kitobni tahrirlash", "Редактировать книгу"),
+                style: GoogleFonts.poppins(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

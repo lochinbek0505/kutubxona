@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kutubxona/BooksPage.dart';
 import 'package:kutubxona/MembersManagementPage.dart';
 import 'package:kutubxona/ProfilePage.dart';
@@ -13,6 +14,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  String _language = 'uz';
+  bool _isDarkTheme = false;
 
   final List<Widget> _pages = [
     BooksPage(),
@@ -21,17 +24,35 @@ class _HomePageState extends State<HomePage> {
     ProfilePage(),
   ];
 
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _language = prefs.getString('language') ?? 'uz';
+      _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-      body: _pages[_currentIndex],
+    final bgColor = _isDarkTheme ? const Color(0xFF0F172A) : Colors.white;
+    final navBarColor = _isDarkTheme ? const Color(0xFF1E293B) : Colors.grey[100];
+    final selectedColor = _isDarkTheme ? Colors.white : Colors.black;
+    final unselectedColor = _isDarkTheme ? Colors.grey.shade400 : Colors.grey;
 
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        backgroundColor: const Color(0xFF1E293B),
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey.shade400,
+        backgroundColor: navBarColor,
+        selectedItemColor: selectedColor,
+        unselectedItemColor: unselectedColor,
         showUnselectedLabels: true,
         selectedFontSize: 12,
         unselectedFontSize: 12,
@@ -41,24 +62,22 @@ class _HomePageState extends State<HomePage> {
             _currentIndex = index;
           });
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_rounded),
-            // Home o‘rniga zamonaviy variant
-            label: "Home",
+            icon: const Icon(Icons.dashboard_rounded),
+            label: _language == 'uz' ? "" : "",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.group_rounded), // Users o‘rniga aniqroq ifoda
-            label: "Users",
+            icon: const Icon(Icons.group_rounded),
+            label: _language == 'uz' ? "" : "",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_rounded), // Books uchun mos ikonka
-            label: "Books",
+            icon: const Icon(Icons.menu_book_rounded),
+            label: _language == 'uz' ? "" : "",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle_rounded),
-            // Profile uchun yumaloq avatar
-            label: "Profile",
+            icon: const Icon(Icons.account_circle_rounded),
+            label: _language == 'uz' ? "" : "",
           ),
         ],
       ),

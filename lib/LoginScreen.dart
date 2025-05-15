@@ -2,6 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kutubxona/HomePage.dart';
+
 import 'local_user_service.dart';
 import 'register_screen.dart';
 
@@ -17,9 +20,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   bool isLoading = false;
 
+  String language = 'uz';
+  bool isDarkTheme = false;
+
+  Future<void> loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      language = prefs.getString('language') ?? 'uz';
+      isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
+    });
+  }
+
+  String t(String uz, String ru) => language == 'ru' ? ru : uz;
+
+  @override
+  void initState() {
+    super.initState();
+    loadPreferences();
+  }
+
   Future<void> _login() async {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
-      _showMessage("Iltimos, barcha maydonlarni to'ldiring");
+      _showMessage(t("Iltimos, barcha maydonlarni to'ldiring", "Пожалуйста, заполните все поля"));
       return;
     }
 
@@ -34,13 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final userId = userCredential.user!.uid;
 
-      // Realtime databasedan user ma'lumotlarini olish
       final userSnapshot =
-          await FirebaseDatabase.instance
-              .ref()
-              .child('users')
-              .child(userId)
-              .get();
+      await FirebaseDatabase.instance.ref().child('users').child(userId).get();
 
       if (userSnapshot.exists) {
         final userData = Map<String, dynamic>.from(userSnapshot.value as Map);
@@ -52,28 +69,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MergeableMaterial()),
+          MaterialPageRoute(builder: (_) => const HomePage()),
         );
       } else {
-        _showMessage("Foydalanuvchi topilmadi");
+        _showMessage(t("Foydalanuvchi topilmadi", "Пользователь не найден"));
       }
     } on FirebaseAuthException catch (e) {
-      _showMessage(e.message ?? 'Tizimga kirishda xatolik yuz berdi');
+      _showMessage(e.message ?? t("Tizimga kirishda xatolik yuz berdi", "Ошибка входа"));
     } finally {
       setState(() => isLoading = false);
     }
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = isDarkTheme ? const Color(0xFF0F172A) : Colors.white;
+    final textColor = isDarkTheme ? Colors.white : Colors.black;
+    final hintTextColor = isDarkTheme ? Colors.white54 : Colors.black54;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: backgroundColor,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -85,38 +104,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: textColor,
                   ),
                 ),
                 const SizedBox(height: 40),
-                _glassTextField(emailController, 'Email', Icons.email),
+                _glassTextField(emailController, t("Email", "Электронная почта"), Icons.email, textColor, hintTextColor),
                 const SizedBox(height: 20),
                 _glassTextField(
                   passwordController,
-                  'Parol',
+                  t("Parol", "Пароль"),
                   Icons.lock,
+                  textColor,
+                  hintTextColor,
                   obscure: true,
                 ),
                 const SizedBox(height: 30),
                 isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                      onPressed: _login,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 80,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        "Kirish",
-                        style: GoogleFonts.poppins(fontSize: 18,color: Colors.white),
-                      ),
-                    ),
+                  onPressed: _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    t("Kirish", "Войти"),
+                    style: GoogleFonts.poppins(fontSize: 18, color: Colors.white),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
@@ -125,9 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       MaterialPageRoute(builder: (_) => const RegisterScreen()),
                     );
                   },
-                  child: const Text(
-                    "Ro’yxatdan o’tish",
-                    style: TextStyle(color: Colors.white70),
+                  child: Text(
+                    t("Ro’yxatdan o’tish", "Зарегистрироваться"),
+                    style: TextStyle(color: hintTextColor),
                   ),
                 ),
               ],
@@ -139,29 +155,28 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _glassTextField(
-    TextEditingController controller,
-    String hint,
-    IconData icon, {
-    bool obscure = false,
-  }) {
+      TextEditingController controller,
+      String hint,
+      IconData icon,
+      Color textColor,
+      Color hintTextColor, {
+        bool obscure = false,
+      }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: isDarkTheme ? Colors.white.withOpacity(0.08) : Colors.grey.withOpacity(0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: isDarkTheme ? Colors.white.withOpacity(0.2) : Colors.black12),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: textColor),
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 18,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.white54),
+          hintStyle: TextStyle(color: hintTextColor),
+          prefixIcon: Icon(icon, color: hintTextColor),
           border: InputBorder.none,
         ),
       ),
