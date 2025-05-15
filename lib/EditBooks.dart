@@ -9,14 +9,16 @@ import 'package:uuid/uuid.dart';
 
 import 'local_user_service.dart';
 
-class UploadBookPage extends StatefulWidget {
-  const UploadBookPage({super.key});
+class EditBookPage extends StatefulWidget {
+  var data;
+
+  EditBookPage({super.key, required this.data});
 
   @override
-  State<UploadBookPage> createState() => _UploadBookPageState();
+  State<EditBookPage> createState() => _UploadBookPageState();
 }
 
-class _UploadBookPageState extends State<UploadBookPage> {
+class _UploadBookPageState extends State<EditBookPage> {
   final titleController = TextEditingController();
   final authorController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -53,31 +55,18 @@ class _UploadBookPageState extends State<UploadBookPage> {
   }
 
   Future<void> _uploadBook() async {
-    if (selectedFile == null ||
-        titleController.text.isEmpty ||
-        authorController.text.isEmpty)
-      return;
+    if (titleController.text.isEmpty || authorController.text.isEmpty) return;
 
     try {
       setState(() => isLoading = true);
 
-      final bookId = const Uuid().v4();
-
-      final storageRef = FirebaseStorage.instance.ref().child(
-        'books/$bookId.pdf',
-      );
-      await storageRef.putFile(selectedFile!);
-      final pdfUrl = await storageRef.getDownloadURL();
 
       final bookData = {
-        'bookId': bookId,
         'title': titleController.text.trim(),
         'author': authorController.text.trim(),
         'description': descriptionController.text.trim(),
         'category': category,
         'status': status,
-        'pdfUrl': pdfUrl,
-        'authorId': userId,
 
         'createdAt': DateTime.now().toIso8601String(),
       };
@@ -86,27 +75,23 @@ class _UploadBookPageState extends State<UploadBookPage> {
       final dbRef = FirebaseDatabase.instance
           .ref()
           .child('books')
-          .child(bookId);
-      await dbRef.set(bookData);
+          .child(widget.data['bookId']);
+      await dbRef.update(bookData);
 
       // Agar private bo‘lsa allowedUsers ga yozamiz
       if (status == 'private') {
-        await dbRef.child('allowedUsers').set({
+        await dbRef.child('allowedUsers').update({
           for (var id in selectedUserIds) id: true,
         });
       }
 
       setState(() {
         isLoading = false;
-        titleController.clear();
-        authorController.clear();
-        descriptionController.clear();
-        selectedFile = null;
-        selectedUserIds.clear();
+        Navigator.pop(context);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kitob muvaffaqiyatli yuklandi')),
+        const SnackBar(content: Text('Kitob muvaffaqiyatli tahrirlandi')),
       );
     } catch (e) {
       setState(() => isLoading = false);
@@ -188,6 +173,21 @@ class _UploadBookPageState extends State<UploadBookPage> {
   void initState() {
     super.initState();
     getId();
+
+    titleController.text = widget.data['title'];
+    authorController.text = widget.data['author'];
+    descriptionController.text = widget.data['description'];
+    category = widget.data['category'];
+    status = widget.data['status'];
+
+    // Convert allowedUsers Map keys to List<String>
+    if (widget.data['allowedUsers'] != null) {
+      final allowedUsersMap =
+          widget.data['allowedUsers'] as Map<dynamic, dynamic>;
+      selectedUserIds = allowedUsersMap.keys.map((e) => e.toString()).toList();
+    } else {
+      selectedUserIds = [];
+    }
   }
 
   @override
@@ -276,23 +276,7 @@ class _UploadBookPageState extends State<UploadBookPage> {
                           style: const TextStyle(color: Colors.white70),
                         ),
                     ],
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        await requestStoragePermission();
-                        _pickPdf();
-                      },
-                      icon: const Icon(Icons.upload_file),
-                      label: Text(
-                        selectedFile == null
-                            ? "PDF tanlang"
-                            : "Tanlangan fayl: ${selectedFile!.path.split('/').last}",
-                        style: GoogleFonts.poppins(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                      ),
-                    ),
+
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: _uploadBook,
@@ -307,7 +291,7 @@ class _UploadBookPageState extends State<UploadBookPage> {
                         ),
                       ),
                       child: Text(
-                        "Kitobni yuklash",
+                        "Kitobni tahrirlash",
                         style: GoogleFonts.poppins(fontSize: 18),
                       ),
                     ),
