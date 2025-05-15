@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
     final email = prefs.getString('email') ?? '';
 
     setState(() {
-      _language = prefs.getString('language') ?? 'uz';
+      _language = prefs.getString('language') ??   'uz';
       _isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
       _userEmail = email;
       _isAdmin = email == 'admin@gmail.com';
