@@ -2,6 +2,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'UploadBookPage.dart';
 import 'ViewPage.dart';
 import 'local_user_service.dart';
 
@@ -187,6 +188,17 @@ class _BooksPageState extends State<BooksPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
+      floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.add,color: Colors.white,),
+          onPressed: (){
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const UploadBookPage(),
+          ),
+        );
+        
+      }),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
